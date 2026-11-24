@@ -1,0 +1,64 @@
+{
+  "name": "ネットショップ受注データ",
+  "description": "ネットショップの受注CSVを整形・検証し、決済サービスの入金CSVと照合する。",
+  "encoding": "auto",
+  "delimiter": ",",
+  "keys": ["注文番号"],
+  "allow_extra_columns": false,
+  "columns": [
+    {"name": "注文番号", "type": "code", "required": true, "upper": true, "pattern": "^ORD-\\d{6}$"},
+    {"name": "注文日", "type": "date", "required": true},
+    {"name": "顧客名", "type": "string", "required": true, "max_length": 50},
+    {"name": "メールアドレス", "type": "email"},
+    {"name": "電話番号", "type": "phone"},
+    {"name": "商品コード", "type": "code", "required": true, "upper": true, "pattern": "^[A-Z]{2}-\\d{3}$"},
+    {"name": "商品名", "type": "string", "required": true, "nfkc": true, "max_length": 100},
+    {"name": "数量", "type": "int", "required": true, "min": 1, "max": 999},
+    {"name": "単価", "type": "int", "required": true, "min": 0},
+    {"name": "合計金額", "type": "int", "required": true, "min": 0},
+    {"name": "支払方法", "type": "string", "required": true, "allowed": ["クレジットカード", "銀行振込", "コンビニ払い", "代金引換"]}
+  ],
+  "row_rules": [
+    {"type": "product_equals", "target": "合計金額", "factors": ["数量", "単価"], "message": "合計金額が 数量×単価 と合いません"}
+  ],
+  "aggregations": [
+    {
+      "name": "月別売上",
+      "group_by": ["注文日:month"],
+      "metrics": [
+        {"func": "count", "label": "注文件数"},
+        {"func": "sum", "column": "数量", "label": "販売数量"},
+        {"func": "sum", "column": "合計金額", "label": "売上金額"}
+      ]
+    },
+    {
+      "name": "商品別売上",
+      "group_by": ["商品コード", "商品名"],
+      "metrics": [
+        {"func": "count", "label": "注文件数"},
+        {"func": "sum", "column": "数量", "label": "販売数量"},
+        {"func": "sum", "column": "合計金額", "label": "売上金額"},
+        {"func": "mean", "column": "合計金額", "label": "平均注文金額"}
+      ]
+    },
+    {
+      "name": "支払方法別",
+      "group_by": ["支払方法"],
+      "metrics": [
+        {"func": "count", "label": "注文件数"},
+        {"func": "sum", "column": "合計金額", "label": "売上金額"},
+        {"func": "nunique", "column": "メールアドレス", "label": "購入者数（メール）"}
+      ]
+    }
+  ],
+  "reconcile": {
+    "right_profile": "payments.json",
+    "left_label": "受注",
+    "right_label": "入金",
+    "left_keys": ["注文番号"],
+    "right_keys": ["注文番号"],
+    "compare": [
+      {"left": "合計金額", "right": "入金額", "tolerance": 0}
+    ]
+  }
+}

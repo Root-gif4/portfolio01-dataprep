@@ -1,0 +1,13 @@
+{
+  "name": "決済サービス入金データ",
+  "description": "決済サービスからダウンロードした入金明細CSV。",
+  "encoding": "auto",
+  "keys": ["入金ID"],
+  "columns": [
+    {"name": "入金ID", "type": "code", "required": true, "upper": true, "pattern": "^PAY-\\d{5}$"},
+    {"name": "入金日", "type": "date", "required": true},
+    {"name": "注文番号", "type": "code", "required": true, "upper": true, "pattern": "^ORD-\\d{6}$"},
+    {"name": "入金額", "type": "int", "required": true, "min": 1},
+    {"name": "決済手段", "type": "string"}
+  ]
+}
